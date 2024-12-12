@@ -1,16 +1,7 @@
-# Save this script as `app.py` in Colab
 import streamlit as st
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
-
-# Define configurations for 4-bit loading
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
 
 # Define model and tokenizer IDs
 base_model_id = "ShahzaibDev/Biomistral_Model_weight_files"
@@ -21,11 +12,10 @@ def load_model_and_tokenizer():
     st.info("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(base_model_id)
 
-    st.info("Loading base model with 4-bit precision...")
+    st.info("Loading base model...")
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_id,
-        device_map="auto",
-        quantization_config=bnb_config
+        device_map="auto"  # Automatically assigns the model to available devices like GPU or CPU
     )
 
     st.info("Loading fine-tuned PEFT model...")
@@ -64,7 +54,7 @@ if st.button("Get Answer"):
             else:
                 eval_prompt = question
 
-            inputs = tokenizer(eval_prompt, return_tensors="pt").to("cuda")
+            inputs = tokenizer(eval_prompt, return_tensors="pt").to("cuda" if torch.cuda.is_available() else "cpu")
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=300)
 
